@@ -47,6 +47,24 @@ cal.add('varsion', '0.1')
 
 local_tz = pytz.timezone('Europe/Copenhagen')
 
+text_file = open('/Users/csjunker/PycharmProjects/huset-Bio-iCal/Huset-Bio.ics', 'r')
+istr = text_file.read()
+text_file.close()
+
+idict = {}
+
+gcal = Calendar.from_ical(istr)
+for component in gcal.walk():
+    if component.name == "VEVENT":
+        #print(component.get('summary'))
+        uid=component.get('uid')
+        seq=component.get('sequence')
+        idict[uid] = seq
+        #seq = seq + 1
+        #print(uid)
+        #print(seq)
+        #print(component.get('dtstamp'))
+
 count = 0
 last_date = 'NO_LAST*DATE'
 for movie in results:
@@ -85,8 +103,15 @@ for movie in results:
         print ('URL', event_url)
 
         event = Event()
-        event.add ('UID', 'Husets-Bio-' + movie_id)
-        event.add ('SEQUENCE', '0')
+        uid = 'Husets-Bio-' + movie_id
+        seq = 0
+        if uid in idict:
+            seq = idict[uid]
+            seq = seq + 1
+        event.add ('UID', uid)
+        event.add ('SEQUENCE', seq)
+        print('UID', uid)
+        print('SEQUENCE', seq)
 
         event.add('LOCATION', 'Husets-Biograf; Rådhusstræde 13, 1466 København K')
         event.add('dtstart', datetime(2018, md, da, hh, mm, 0, tzinfo=local_tz))
