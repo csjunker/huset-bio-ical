@@ -114,7 +114,11 @@ for movie in results:
         print('SEQUENCE', seq)
 
         event.add('LOCATION', 'Husets-Biograf; Rådhusstræde 13, 1466 København K')
-        event.add('dtstart', datetime(2018, md, da, hh, mm, 0, tzinfo=local_tz))
+        year = int(datetime.now().strftime("%Y"))
+        currentmonth = int(datetime.now().strftime("%m"))
+        if (currentmonth - 2) > md:
+            year = year + 1
+        event.add('dtstart', datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
         #event.add('dtend', datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
         event.add('dtstamp', datetime.now(local_tz))
         event.add('LAST-MODIFIED', datetime.now(pytz.utc))
