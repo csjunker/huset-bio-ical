@@ -4,10 +4,12 @@ from datetime import datetime
 import pytz
 from icalendar import Calendar, Event
 import re
+import os.path
 
 
 base_url = r'https://huset-kbh.dk/'
 params = {'taxonomyId':'274', 'page_nr':'10'}
+ics_filename = 'Huset-Bio.ics'
 
 ##search_url = base_url
 ##oversigt = html.parse(search_url)
@@ -43,27 +45,23 @@ results = tree.cssselect('#widgets-wrapper')[0].getchildren()
 cal = Calendar()
 #cal = new CalendCalendarar(None)
 cal.add('prodid', 'Husets Biograf')
-cal.add('varsion', '0.1')
+cal.add('version', '2.0')
 
 local_tz = pytz.timezone('Europe/Copenhagen')
 
-text_file = open('/Users/csjunker/PycharmProjects/huset-Bio-iCal/Huset-Bio.ics', 'r')
-istr = text_file.read()
-text_file.close()
 
 idict = {}
+if os.path.isfile(ics_filename):
+    text_file = open(ics_filename, 'r')
+    istr = text_file.read()
+    text_file.close()
 
-gcal = Calendar.from_ical(istr)
-for component in gcal.walk():
-    if component.name == "VEVENT":
-        #print(component.get('summary'))
-        uid=component.get('uid')
-        seq=component.get('sequence')
-        idict[uid] = seq
-        #seq = seq + 1
-        #print(uid)
-        #print(seq)
-        #print(component.get('dtstamp'))
+    gcal = Calendar.from_ical(istr)
+    for component in gcal.walk():
+        if component.name == "VEVENT":
+            uid=component.get('uid')
+            seq=component.get('sequence')
+            idict[uid] = seq
 
 count = 0
 last_date = 'NO_LAST*DATE'
@@ -147,7 +145,10 @@ t_utc = t.astimezone(pytz.UTC)
 print ('t:', t)
 print ('t_utc:', t_utc)
 
-text_file = open('/Users/csjunker/PycharmProjects/huset-Bio-iCal/Huset-Bio.ics', 'wb')
+text_file = open(ics_filename, 'wb')
 text_file.write(istr)
 text_file.close()
+
+print()
+print('aws s3 cp Huset-Bio.ics s3://husets-bio/Huset-Bio.ics --acl public-read')
 
