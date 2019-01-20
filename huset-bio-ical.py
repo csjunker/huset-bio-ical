@@ -75,6 +75,11 @@ if os.path.isfile(ics_filename):
     text_file.close()
 
     gcal = Calendar.from_ical(istr)
+    tmpseq = gcal.get('SEQUENCE')
+    if not tmpseq is None:
+        calSequence =  tmpseq;
+    print ('exist SEQ', tmpseq)
+
     for component in gcal.walk():
         if component.name == "VEVENT":
             uid=component.get('uid')
@@ -124,6 +129,7 @@ for movie in results:
         if uid in idict:
             seq = idict[uid]
             seq = seq + 1
+            updateSeq = True
         event.add ('UID', uid)
         event.add ('SEQUENCE', seq)
         print('UID', uid)
@@ -148,6 +154,9 @@ for movie in results:
 
         cal.add_component(event)
 
+if updateSeq == True:
+    calSequence = calSequence + 1
+#cal.add('sequence', calSequence)
 
 
 print ()
