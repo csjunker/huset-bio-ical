@@ -5,6 +5,7 @@ import pytz
 from icalendar import Calendar, Event
 import re
 import os.path
+import uuid
 
 
 base_url = r'https://huset-kbh.dk/'
@@ -42,14 +43,31 @@ tree = html.fromstring(r.text)
 results = tree.cssselect('#widgets-wrapper')[0].getchildren()
 #print ('hugo HUGO', len(results))
 
+
 cal = Calendar()
 #cal = new CalendCalendarar(None)
-cal.add('prodid', 'Husets Biograf')
+calName = 'Husets-Bio All Shows'
+calTimezone = 'Europe/Copenhagen'
+cal.add('prodid', '7703f8e4-7a23-402f-bd1d-047656ee3cc7')
 cal.add('version', '2.0')
+cal.add('url', 'https://services.husets-biograf.dk/calendar/all-shows')
+cal.add('name', calName)
+cal.add('X-WR-CALNAME', calName)
+#DESCRIPTION:A description of my calendar
+#X-WR-CALDESC:A description of my calendar
+cal.add('TIMEZONE-ID', calTimezone)
+cal.add('X-WR-TIMEZONE', calTimezone)
+cal.add('REFRESH-INTERVAL;VALUE=DURATION', 'PT2H')
+cal.add('X-PUBLISHED-TTL', 'PT2H')
+#COLOR:34:50:105
+cal.add('CALSCALE', 'GREGORIAN')
+##cal.add('METHOD', 'PUBLISH')
 
-local_tz = pytz.timezone('Europe/Copenhagen')
+local_tz = pytz.timezone(calTimezone)
 
 
+calSequence = 0
+updateSeq = False
 idict = {}
 if os.path.isfile(ics_filename):
     text_file = open(ics_filename, 'r')
