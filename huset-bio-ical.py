@@ -15,8 +15,7 @@ ics_filename = 'Huset-Bio.ics'
 ##search_url = base_url
 ##oversigt = html.parse(search_url)
 
-rex = re.compile(r'^(\d{2})\.(\d{2}).*?(\d{1,2}).(\d{2}).*')
-#rex = re.compile(r'^TIME\ (\d{2})(.*)')
+rex = re.compile(r'^(\d{2})\.(\d{2}).*?Kl\..*?(\d{1,2}).(\d{2}).*')
 
 def parsetime(timestr):
     print ('PT[{}]'.format(timestr))
@@ -165,7 +164,7 @@ print ('COUNT', count)
 print ('last_date', last_date)
 print ('DATETIME', datetime.now())
 istr = cal.to_ical()
-print (istr)
+#print (istr)
 
 t = local_tz.localize(datetime.now())
 t_utc = t.astimezone(pytz.UTC)
