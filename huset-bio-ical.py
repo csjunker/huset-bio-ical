@@ -6,6 +6,7 @@ from icalendar import Calendar, Event
 import re
 import os.path
 import uuid
+import subprocess
 
 
 base_url = r'https://huset-kbh.dk/'
@@ -177,4 +178,7 @@ text_file.close()
 
 print()
 print('aws s3 cp Huset-Bio.ics s3://husets-bio/Huset-Bio.ics --acl public-read')
+rc = subprocess.run(['aws', 's3', 'cp', 'Huset-Bio.ics', 's3://husets-bio/Huset-Bio.ics', '--acl', 'public-read'])
+print('rc', rc)
+
 
