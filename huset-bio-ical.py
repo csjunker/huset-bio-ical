@@ -1,13 +1,34 @@
 import requests
 from lxml import html
-from datetime import datetime
+import datetime
 import pytz
-from icalendar import Calendar, Event
+from icalendar import Calendar, Event, Timezone, TimezoneDaylight, TimezoneStandard
 import re
 import os.path
-import uuid
 import subprocess
 
+def add_vtimezone(cal):
+    tzc = Timezone()
+    tzc.add('tzid', 'Europe/Copenhagen')
+    tzc.add('x-lic-location', 'Europe/Copenhagen')
+
+    tzs = TimezoneStandard()
+    tzs.add('tzname', 'CET')
+    tzs.add('dtstart', datetime.datetime(1970, 10, 25, 3, 0, 0))
+    tzs.add('rrule', {'freq': 'yearly', 'bymonth': 10, 'byday': '-1su'})
+    tzs.add('TZOFFSETFROM', datetime.timedelta(hours=2))
+    tzs.add('TZOFFSETTO', datetime.timedelta(hours=1))
+
+    tzd = TimezoneDaylight()
+    tzd.add('tzname', 'CEST')
+    tzd.add('dtstart', datetime.datetime(1970, 3, 29, 2, 0, 0))
+    tzs.add('rrule', {'freq': 'yearly', 'bymonth': 3, 'byday': '-1su'})
+    tzd.add('TZOFFSETFROM', datetime.timedelta(hours=1))
+    tzd.add('TZOFFSETTO', datetime.timedelta(hours=2))
+
+    tzc.add_component(tzs)
+    tzc.add_component(tzd)
+    cal.add_component(tzc)
 
 base_url = r'https://huset-kbh.dk/'
 params = {'taxonomyId':'274', 'page_nr':'10'}
@@ -136,24 +157,25 @@ for movie in results:
         print('SEQUENCE', seq)
 
         event.add('LOCATION', 'Husets-Biograf; Rådhusstræde 13, 1466 København K')
-        year = int(datetime.now().strftime("%Y"))
-        currentmonth = int(datetime.now().strftime("%m"))
+        year = int(datetime.datetime.now().strftime("%Y"))
+        currentmonth = int(datetime.datetime.now().strftime("%m"))
         if (currentmonth - 2) > md:
             year = year + 1
-        event.add('dtstart', datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
-        #event.add('dtend', datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
-        event.add('dtstamp', datetime.now(local_tz))
-        event.add('LAST-MODIFIED', datetime.now(pytz.utc))
+        event.add('dtstart', datetime.datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
+        #event.add('dtend', datetime.datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
+        event.add('dtstamp', datetime.datetime.now(local_tz))
+        event.add('LAST-MODIFIED', datetime.datetime.now(pytz.utc))
         event.add ('CATEGORIES', event_genre)
 
         #event.add('COMMENT' 'Kommentar')
-        event.add ('DESICRIPTION', elem_description)
+        event.add ('DESCRIPTION', elem_description)
         event.add ('URL', event_url)
         event.add ('SUMMARY', event_name)
 
 
         cal.add_component(event)
 
+add_vtimezone(cal)
 if updateSeq == True:
     calSequence = calSequence + 1
 #cal.add('sequence', calSequence)
@@ -163,11 +185,11 @@ print ()
 print ('##################')
 print ('COUNT', count)
 print ('last_date', last_date)
-print ('DATETIME', datetime.now())
+print ('DATETIME', datetime.datetime.now())
 istr = cal.to_ical()
 #print (istr)
 
-t = local_tz.localize(datetime.now())
+t = local_tz.localize(datetime.datetime.now())
 t_utc = t.astimezone(pytz.UTC)
 print ('t:', t)
 print ('t_utc:', t_utc)
@@ -181,4 +203,4 @@ print('aws s3 cp Huset-Bio.ics s3://husets-bio/Huset-Bio.ics --acl public-read')
 rc = subprocess.run(['aws', 's3', 'cp', 'Huset-Bio.ics', 's3://husets-bio/Huset-Bio.ics', '--acl', 'public-read'])
 print('rc', rc)
 
-
+print('validate', 'https://icalendar.org/validator.html?url=https://services.husets-biograf.dk/calendar/all-shows')
