@@ -7,6 +7,7 @@ import re
 import os.path
 import subprocess
 
+__version__ = '2.1'
 def add_vtimezone(cal):
     tzc = Timezone()
     tzc.add('tzid', 'Europe/Copenhagen')
@@ -31,7 +32,7 @@ def add_vtimezone(cal):
     cal.add_component(tzc)
 
 base_url = r'https://huset-kbh.dk/'
-params = {'taxonomyId':'274', 'page_nr':'10'}
+params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'da'}
 ics_filename = 'Huset-Bio.ics'
 
 ##search_url = base_url
@@ -58,9 +59,17 @@ def get_element(movie, cssselector):
 def get_element_value(movie, cssselector):
     return get_element(movie, cssselector).text_content().strip()
 
+def get_status_value(movie):
+    event_status = movie.cssselect('.ticket-replace-status')
+    if type(event_status) == list and len(event_status) > 0:
+        event_status = get_element_value(movie, '.ticket-replace-status')
+        if event_status == 'Udsolgt' or event_status == 'Sold out':
+            return 'CANCELLED'
+    return None
+
 tree = html.fromstring(r.text)
 
-#results = tree.xpath(xpath)
+#results = tree.xpath(xpath)'
 results = tree.cssselect('#widgets-wrapper')[0].getchildren()
 #print ('hugo HUGO', len(results))
 
@@ -69,8 +78,12 @@ cal = Calendar()
 #cal = new CalendCalendarar(None)
 calName = 'Husets-Bio All Shows'
 calTimezone = 'Europe/Copenhagen'
-cal.add('prodid', '7703f8e4-7a23-402f-bd1d-047656ee3cc7')
+
+
+##cal.add('PRODID', '7703f8e4-7a23-402f-bd1d-047656ee3cc7')
+cal.add('PRODID', '-//HUSETS-BIOGRAF//NOSGML V' + __version__ + '//EN')
 cal.add('version', '2.0')
+cal.add('CLASS', 'PUBLIC')
 cal.add('url', 'https://services.husets-biograf.dk/calendar/all-shows')
 cal.add('name', calName)
 cal.add('X-WR-CALNAME', calName)
@@ -122,6 +135,7 @@ for movie in results:
         movie_time = get_element_value(movie, '.event-time')
 
         event_name = get_element_value(movie, '.event-name')
+        event_status = get_status_value(movie)
 
         event_url = get_element(movie, '.event-desc-text a').get('href')
         elem_description = get_element_value(movie, '.event-desc-text p')
@@ -133,6 +147,7 @@ for movie in results:
         #.ticket-status
 
         print ('ID', movie_id)
+        print('STATUS', event_status)
         print ('TIME', movie_time)
         last_date = movie_time
         da, md, hh, mm = parsetime(movie_time)
@@ -171,6 +186,15 @@ for movie in results:
         event.add ('DESCRIPTION', elem_description)
         event.add ('URL', event_url)
         event.add ('SUMMARY', event_name)
+        if event.has_key('STATUS'):
+            event.__delattr__('STATUS')
+        if event_status != None:
+            None
+            sum = event.get('SUMMARY')
+            if len(sum) > 2:
+                sum = 'SOLD OUT  ' + sum
+                event.add('SUMMARY', sum)
+            #event.add ('STATUS', event_status)
 
 
         cal.add_component(event)
