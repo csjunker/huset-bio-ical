@@ -59,12 +59,25 @@ def get_element(movie, cssselector):
 def get_element_value(movie, cssselector):
     return get_element(movie, cssselector).text_content().strip()
 
-def get_status_value(movie):
+def set_movie_status(movie, event):
     event_status = movie.cssselect('.ticket-replace-status')
     if type(event_status) == list and len(event_status) > 0:
         event_status = get_element_value(movie, '.ticket-replace-status')
-        if event_status == 'Udsolgt' or event_status == 'Sold out':
-            return 'CANCELLED'
+        if event_status == None:
+            return None
+        elif event_status == 'Cancelled':
+            cal.add('STATUS', 'CANCELLED')
+        elif event_status == 'Limited Tickets':
+            summary = event.get('SUMMARY')
+            event.add('SUMMARY', summary + ' (Limited Tickets)')
+        elif event_status == 'New date':
+            None
+        elif event_status == 'New stage':
+            None
+        elif event_status == 'Sold out':
+            summary = event.get('SUMMARY')
+            event.add('SUMMARY', '(SOLD OUT) ' + summary)
+
     return None
 
 tree = html.fromstring(r.text)
@@ -135,19 +148,17 @@ for movie in results:
         movie_time = get_element_value(movie, '.event-time')
 
         event_name = get_element_value(movie, '.event-name')
-        event_status = get_status_value(movie)
 
         event_url = get_element(movie, '.event-desc-text a').get('href')
         elem_description = get_element_value(movie, '.event-desc-text p')
         event_picture_url = get_element(movie, '.img-responsive').get('src')
-        #aa = get_element_value (movie, '')
         #.img-responsive
         #.event-desc-text
         #.ticket-price
+
         #.ticket-status
 
         print ('ID', movie_id)
-        print('STATUS', event_status)
         print ('TIME', movie_time)
         last_date = movie_time
         da, md, hh, mm = parsetime(movie_time)
@@ -186,16 +197,9 @@ for movie in results:
         event.add ('DESCRIPTION', elem_description)
         event.add ('URL', event_url)
         event.add ('SUMMARY', event_name)
-        if event.has_key('STATUS'):
-            event.__delattr__('STATUS')
-        if event_status != None:
-            None
-            sum = event.get('SUMMARY')
-            if len(sum) > 2:
-                sum = 'SOLD OUT  ' + sum
-                event.add('SUMMARY', sum)
-            #event.add ('STATUS', event_status)
 
+        event_status = set_movie_status(movie, event)
+        print('STATUS', event_status)
 
         cal.add_component(event)
 
