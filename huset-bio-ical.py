@@ -32,13 +32,13 @@ def add_vtimezone(cal):
     cal.add_component(tzc)
 
 base_url = r'https://huset-kbh.dk/'
-params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'da'}
+params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'en'}
 ics_filename = 'Huset-Bio.ics'
 
 ##search_url = base_url
 ##oversigt = html.parse(search_url)
 
-rex = re.compile(r'^(\d{2})\.(\d{2}).*?Kl\..*?(\d{1,2}).(\d{2}).*')
+rex = re.compile(r'^(\d{2})\.(\d{2}).*?At.*?(\d{1,2}).(\d{2}).*')
 
 def parsetime(timestr):
     print ('PT[{}]'.format(timestr))
