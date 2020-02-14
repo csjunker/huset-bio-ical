@@ -83,3 +83,5 @@ SHIFT SCHED. to JULY.text.txt
 s3upload.py
 
 *.swp
+
+__pycache__/
