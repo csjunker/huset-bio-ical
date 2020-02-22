@@ -1,38 +1,16 @@
-import requests
-from lxml import html
 import datetime
 import pytz
-from icalendar import Calendar, Event, Timezone, TimezoneDaylight, TimezoneStandard
+from icalendar import Calendar, Event
 import re
 import os.path
 import subprocess
 
+from huset_parse import getBioEvents
+
 __version__ = '2.1'
-def add_vtimezone(cal):
-    tzc = Timezone()
-    tzc.add('tzid', 'Europe/Copenhagen')
-    tzc.add('x-lic-location', 'Europe/Copenhagen')
 
-    tzs = TimezoneStandard()
-    tzs.add('tzname', 'CET')
-    tzs.add('dtstart', datetime.datetime(1970, 10, 25, 3, 0, 0))
-    tzs.add('rrule', {'freq': 'yearly', 'bymonth': 10, 'byday': '-1su'})
-    tzs.add('TZOFFSETFROM', datetime.timedelta(hours=2))
-    tzs.add('TZOFFSETTO', datetime.timedelta(hours=1))
+from cal_func import add_vtimezone
 
-    tzd = TimezoneDaylight()
-    tzd.add('tzname', 'CEST')
-    tzd.add('dtstart', datetime.datetime(1970, 3, 29, 2, 0, 0))
-    tzs.add('rrule', {'freq': 'yearly', 'bymonth': 3, 'byday': '-1su'})
-    tzd.add('TZOFFSETFROM', datetime.timedelta(hours=1))
-    tzd.add('TZOFFSETTO', datetime.timedelta(hours=2))
-
-    tzc.add_component(tzs)
-    tzc.add_component(tzd)
-    cal.add_component(tzc)
-
-base_url = r'https://huset-kbh.dk/'
-params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'en'}
 ics_filename = 'Huset-Bio.ics'
 
 ##search_url = base_url
@@ -47,11 +25,7 @@ def parsetime(timestr):
     print ('groups:', m.lastindex, ':', m.groups())
     return (int(x) for x in m.groups())
 
-headers = {
-    'User-Agent': 'Mozilla/5.0'
-}
 
-r = requests.get(base_url, params=params, headers=headers)
 
 def get_element(movie, cssselector):
     return movie.cssselect(cssselector)[0]
@@ -67,46 +41,37 @@ def set_movie_status(movie, event):
             return None
         elif event_status == 'Cancelled':
             cal.add('STATUS', 'CANCELLED')
+            eventupdate(event, 'SUMMARY', '(CANCELLED) ' + event.get('SUMMARY'))
         elif event_status == 'Limited Tickets':
-            summary = event.get('SUMMARY')
-            event.add('SUMMARY', summary + ' (Limited Tickets)')
+            eventupdate(event, 'SUMMARY', event.get('SUMMARY') + ' (Limited Tickets)')
         elif event_status == 'New date':
             None
         elif event_status == 'New stage':
             None
         elif event_status == 'Sold out':
-            summary = event.get('SUMMARY')
-            event.add('SUMMARY', '(SOLD OUT) ' + summary)
+            eventupdate(event, 'SUMMARY', '(SOLD OUT) ' + event.get('SUMMARY'))
 
     return None
 
-tree = html.fromstring(r.text)
-
-#results = tree.xpath(xpath)'
-results = tree.cssselect('#widgets-wrapper')[0].getchildren()
-#print ('hugo HUGO', len(results))
+def eventupdate(event, key, value):
+    event[key] = value
 
 
 cal = Calendar()
-#cal = new CalendCalendarar(None)
 calName = 'Husets-Bio All Shows'
 calTimezone = 'Europe/Copenhagen'
 
 
-##cal.add('PRODID', '7703f8e4-7a23-402f-bd1d-047656ee3cc7')
 cal.add('PRODID', '-//HUSETS-BIOGRAF//NOSGML V' + __version__ + '//EN')
-cal.add('version', '2.0')
+cal.add('VERSION', '2.0') #ical version not calendar version
 cal.add('CLASS', 'PUBLIC')
-cal.add('url', 'https://services.husets-biograf.dk/calendar/all-shows')
-cal.add('name', calName)
+cal.add('URL', 'https://services.husets-biograf.dk/calendar/all-shows')
+cal.add('NAME', calName)
 cal.add('X-WR-CALNAME', calName)
-#DESCRIPTION:A description of my calendar
-#X-WR-CALDESC:A description of my calendar
 cal.add('TIMEZONE-ID', calTimezone)
 cal.add('X-WR-TIMEZONE', calTimezone)
 cal.add('REFRESH-INTERVAL;VALUE=DURATION', 'PT2H')
 cal.add('X-PUBLISHED-TTL', 'PT2H')
-#COLOR:34:50:105
 cal.add('CALSCALE', 'GREGORIAN')
 ##cal.add('METHOD', 'PUBLISH')
 
@@ -129,79 +94,74 @@ if os.path.isfile(ics_filename):
 
     for component in gcal.walk():
         if component.name == "VEVENT":
-            uid=component.get('uid')
-            seq=component.get('sequence')
+            uid=component.get('UID')
+            seq=component.get('SEQUENCE')
             idict[uid] = seq
 
 count = 0
 last_date = 'NO_LAST*DATE'
-for movie in results:
-#movie = results[1]
+
+for movie in getBioEvents():
     event_genre = get_element_value(movie, '.event-genre')
-    if not event_genre in ['Familie/Børn, Samlingspunkt Indre By', 'Samlingspunkt Indre By']:
 
-        #print(html.tostring(movie))
-        print ()
+    count += 1
+    movie_id = movie.get('data-id')
+    movie_time = get_element_value(movie, '.event-time')
 
-        count += 1
-        movie_id = movie.get('data-id')
-        movie_time = get_element_value(movie, '.event-time')
+    event_name = get_element_value(movie, '.event-name')
 
-        event_name = get_element_value(movie, '.event-name')
+    event_url = get_element(movie, '.event-desc-text a').get('href')
+    elem_description = get_element_value(movie, '.event-desc-text p')
+    event_picture_url = get_element(movie, '.img-responsive').get('src')
+    #.img-responsive
+    #.event-desc-text
+    #.ticket-price
 
-        event_url = get_element(movie, '.event-desc-text a').get('href')
-        elem_description = get_element_value(movie, '.event-desc-text p')
-        event_picture_url = get_element(movie, '.img-responsive').get('src')
-        #.img-responsive
-        #.event-desc-text
-        #.ticket-price
+    #.ticket-status
 
-        #.ticket-status
+    print ('ID', movie_id)
+    print ('TIME', movie_time)
+    last_date = movie_time
+    da, md, hh, mm = parsetime(movie_time)
 
-        print ('ID', movie_id)
-        print ('TIME', movie_time)
-        last_date = movie_time
-        da, md, hh, mm = parsetime(movie_time)
+    print('GENRE', event_genre)
+    print('NAME', event_name)
+    print ('DESC', elem_description)
 
-        print('GENRE', event_genre)
-        print('NAME', event_name)
-        print ('DESC', elem_description)
+    print ('IMG', event_picture_url)
+    print ('URL', event_url)
 
-        print ('IMG', event_picture_url)
-        print ('URL', event_url)
+    event = Event()
+    uid = 'Husets-Bio-' + movie_id
+    seq = 0
+    if uid in idict:
+        seq = idict[uid]
+        seq = seq + 1
+        updateSeq = True
+    event.add ('UID', uid)
+    event.add ('SEQUENCE', seq)
+    print('UID', uid)
+    print('SEQUENCE', seq)
 
-        event = Event()
-        uid = 'Husets-Bio-' + movie_id
-        seq = 0
-        if uid in idict:
-            seq = idict[uid]
-            seq = seq + 1
-            updateSeq = True
-        event.add ('UID', uid)
-        event.add ('SEQUENCE', seq)
-        print('UID', uid)
-        print('SEQUENCE', seq)
+    event.add('LOCATION', 'Husets-Biograf; Rådhusstræde 13, 1466 København K')
+    year = int(datetime.datetime.now().strftime("%Y"))
+    currentmonth = int(datetime.datetime.now().strftime("%m"))
+    if (currentmonth - 2) > md:
+        year = year + 1
+    event.add('dtstart', datetime.datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
+    #event.add('dtend', datetime.datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
+    event.add('dtstamp', datetime.datetime.now(local_tz))
+    event.add('LAST-MODIFIED', datetime.datetime.now(pytz.utc))
+    event.add ('CATEGORIES', event_genre)
 
-        event.add('LOCATION', 'Husets-Biograf; Rådhusstræde 13, 1466 København K')
-        year = int(datetime.datetime.now().strftime("%Y"))
-        currentmonth = int(datetime.datetime.now().strftime("%m"))
-        if (currentmonth - 2) > md:
-            year = year + 1
-        event.add('dtstart', datetime.datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
-        #event.add('dtend', datetime.datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
-        event.add('dtstamp', datetime.datetime.now(local_tz))
-        event.add('LAST-MODIFIED', datetime.datetime.now(pytz.utc))
-        event.add ('CATEGORIES', event_genre)
+    event.add ('DESCRIPTION', elem_description)
+    event.add ('URL', event_url)
+    event.add ('SUMMARY', event_name)
 
-        #event.add('COMMENT' 'Kommentar')
-        event.add ('DESCRIPTION', elem_description)
-        event.add ('URL', event_url)
-        event.add ('SUMMARY', event_name)
+    event_status = set_movie_status(movie, event)
+    print('STATUS', event_status)
 
-        event_status = set_movie_status(movie, event)
-        print('STATUS', event_status)
-
-        cal.add_component(event)
+    cal.add_component(event)
 
 add_vtimezone(cal)
 if updateSeq == True:
