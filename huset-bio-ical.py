@@ -142,9 +142,8 @@ for movie in getBioEvents():
     currentmonth = int(datetime.datetime.now().strftime("%m"))
     if (currentmonth - 2) > md:
         year = year + 1
-    event.add('dtstart', datetime.datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
-    #event.add('dtend', datetime.datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
-    event.add('dtstamp', datetime.datetime.now(local_tz))
+    event.add('DTSTART', datetime.datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
+    event.add('DTSTAMP', datetime.datetime.now(local_tz))
     event.add('LAST-MODIFIED', datetime.datetime.now(pytz.utc))
     event.add ('CATEGORIES', event_genre)
 
