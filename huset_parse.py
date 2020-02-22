@@ -2,7 +2,7 @@ import requests
 from lxml import html
 
 base_url = r'https://huset-kbh.dk/'
-params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'en'}
+params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'da'}
 headers = {
     'User-Agent': 'Mozilla/5.0'
 }

@@ -13,10 +13,7 @@ from cal_func import add_vtimezone
 
 ics_filename = 'Huset-Bio.ics'
 
-##search_url = base_url
-##oversigt = html.parse(search_url)
-
-rex = re.compile(r'^(\d{2})\.(\d{2}).*?At.*?(\d{1,2}).(\d{2}).*')
+rex = re.compile(r'^(\d{2})\.(\d{2}).*?(?:Kl\.|At).*?(\d{1,2}).(\d{2}).*')
 
 def parsetime(timestr):
     print ('PT[{}]'.format(timestr))
@@ -24,8 +21,6 @@ def parsetime(timestr):
     print ('mm:', m)
     print ('groups:', m.lastindex, ':', m.groups())
     return (int(x) for x in m.groups())
-
-
 
 def get_element(movie, cssselector):
     return movie.cssselect(cssselector)[0]
@@ -39,16 +34,15 @@ def set_movie_status(movie, event):
         event_status = get_element_value(movie, '.ticket-replace-status')
         if event_status == None:
             return None
-        elif event_status == 'Cancelled':
-            cal.add('STATUS', 'CANCELLED')
+        elif event_status == 'Aflyst' or event_status == 'Cancelled':
             eventupdate(event, 'SUMMARY', '(CANCELLED) ' + event.get('SUMMARY'))
-        elif event_status == 'Limited Tickets':
+        elif event_status == 'Få billetter' or event_status == 'Limited Tickets':
             eventupdate(event, 'SUMMARY', event.get('SUMMARY') + ' (Limited Tickets)')
-        elif event_status == 'New date':
+        elif event_status == 'Ny dato' or event_status == 'New date':
             None
-        elif event_status == 'New stage':
+        elif event_status == 'Ny scene' or event_status == 'New stage':
             None
-        elif event_status == 'Sold out':
+        elif event_status == 'Udsolgt' or event_status == 'Sold out':
             eventupdate(event, 'SUMMARY', '(SOLD OUT) ' + event.get('SUMMARY'))
 
     return None
