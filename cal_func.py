@@ -18,7 +18,7 @@ def add_vtimezone(cal):
     tzd = TimezoneDaylight()
     tzd.add('TZNAME', 'CEST')
     tzd.add('DTSTART', datetime.datetime(1970, 3, 29, 2, 0, 0))
-    tzs.add('RRULE', {'freq': 'yearly', 'bymonth': 3, 'byday': '-1su'})
+    tzd.add('RRULE', {'freq': 'yearly', 'bymonth': 3, 'byday': '-1su'})
     tzd.add('TZOFFSETFROM', datetime.timedelta(hours=1))
     tzd.add('TZOFFSETTO', datetime.timedelta(hours=2))
 
