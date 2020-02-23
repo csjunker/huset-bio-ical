@@ -145,7 +145,7 @@ for movie in getBioEvents():
     event.add('DTSTART', datetime.datetime(year, md, da, hh, mm, 0, tzinfo=local_tz))
     event.add('DTSTAMP', datetime.datetime.now(local_tz))
     event.add('LAST-MODIFIED', datetime.datetime.now(pytz.utc))
-    event.add ('CATEGORIES', event_genre)
+    event.add ('CATEGORIES', [event_genre])
 
     event.add ('DESCRIPTION', elem_description)
     event.add ('URL', event_url)
