@@ -1,5 +1,6 @@
 import requests
 from lxml import html
+import EventData
 
 base_url = r'https://huset-kbh.dk/'
 params = {'taxonomyId':'274', 'page_nr':'10', 'lang':'da'}
