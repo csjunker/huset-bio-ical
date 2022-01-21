@@ -1,4 +1,5 @@
 import requests
+import io
 from lxml import html
 import datetime
 import pytz
@@ -66,19 +67,22 @@ def set_movie_status(movie, event):
         if event_status == None:
             return None
         elif event_status == 'Cancelled':
-            cal.add('STATUS', 'CANCELLED')
+            summary = event.get('SUMMARY')
+            event['SUMMARY'] = '(CANCELLED) ' + summary
+            event.add('STATUS', 'CANCELLED')
         elif event_status == 'Limited Tickets':
             summary = event.get('SUMMARY')
-            event.add('SUMMARY', summary + ' (Limited Tickets)')
+            event['SUMMARY'] = summary + ' (Limited Tickets)'
         elif event_status == 'New date':
             None
         elif event_status == 'New stage':
             None
         elif event_status == 'Sold out':
             summary = event.get('SUMMARY')
-            event.add('SUMMARY', '(SOLD OUT) ' + summary)
+            event['SUMMARY'] = '(SOLD OUT) ' + summary
 
     return None
+
 
 tree = html.fromstring(r.text)
 
@@ -117,9 +121,10 @@ calSequence = 0
 updateSeq = False
 idict = {}
 if os.path.isfile(ics_filename):
-    text_file = open(ics_filename, 'r')
-    istr = text_file.read()
-    text_file.close()
+    with io.open(ics_filename, encoding="utf-8") as text_file:
+    #text_file = open(ics_filename, encoding="utf-8")
+        istr = text_file.read()
+    #text_file.close()
 
     gcal = Calendar.from_ical(istr)
     tmpseq = gcal.get('SEQUENCE')
@@ -191,7 +196,7 @@ for movie in results:
         #event.add('dtend', datetime.datetime(2018, 4, 4, 10, 0, 0, tzinfo=local_tz))
         event.add('dtstamp', datetime.datetime.now(local_tz))
         event.add('LAST-MODIFIED', datetime.datetime.now(pytz.utc))
-        event.add ('CATEGORIES', event_genre)
+        event.add ('CATEGORIES', [event_genre])
 
         #event.add('COMMENT' 'Kommentar')
         event.add ('DESCRIPTION', elem_description)
